@@ -1,3 +1,4 @@
+
 # Huawei Testing Protocol Sun2000
 
 This repository contains Python scripts for interacting with a **Huawei Sun2000** inverter over Modbus RTU or TCP. The utilities allow you to read telemetry, generate register maps and run battery charge/discharge tests.
@@ -102,5 +103,3 @@ async def run_battery_cycles(bridge):
 Refer to the individual scripts for more detailed inline comments on configuration and usage.
 
 ---
-
-This README summarizes how to set up and run the Huawei Sun2000 testing utilities. Adjust parameters in the scripts to suit your installation.
