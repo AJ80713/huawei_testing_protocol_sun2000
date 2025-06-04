@@ -1,0 +1,4 @@
+__pycache__/
+*.log
+huawei_sun2000_control/packages/
+*.tar.gz
