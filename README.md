@@ -267,7 +267,7 @@ python scripts/inverter_register_map.py \
   - `Value`: raw register value (apply gain to convert to engineering units).
 
 - **What It Does**:  
-  Iterates through every entry in `huawei_solar.register_names`, reads it over Modbus, and writes the results to CSV. fileciteturn3file4
+  Iterates through every entry in `huawei_solar.register_names`, reads it over Modbus, and writes the results to CSV.
 
 ---
 
@@ -309,7 +309,7 @@ python scripts/inverter_telemetry.py \
   ```
 
 - **What It Does**:  
-  Reads a predefined list of registers every `interval` seconds and writes them to log. fileciteturn2file4
+  Reads a predefined list of registers every `interval` seconds and writes them to log. 
 
 ---
 
@@ -350,7 +350,7 @@ python tests/inverter_behavior_tests_4_2.py \
   ```
 
 - **What It Does**:  
-  Runs each test function defined in `scripts/inverter_behavior_errors_4_2.py`, logging clamp/mismatch messages and error flags. fileciteturn3file5
+  Runs each test function defined in `scripts/inverter_behavior_errors_4_2.py`, logging clamp/mismatch messages and error flags. 
 
 ---
 
@@ -429,7 +429,7 @@ python scripts/inverter_behavior_tests.py \
   ```
 
 - **What It Does**:  
-  Implements Section 4.3 test flows and logs all relevant error flags and wake/sleep parameters. fileciteturn3file5
+  Implements Section 4.3 test flows and logs all relevant error flags and wake/sleep parameters. 
 
 ---
 
