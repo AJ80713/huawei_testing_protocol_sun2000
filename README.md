@@ -481,14 +481,14 @@ python scripts/inverter_performance_tests.py \
   ```
 
 - **What It Does**:  
-  Reads static and table registers, converts raw values (via gain), and writes a well-formatted CSV. fileciteturn3file6
+Reads static and table registers, converts raw values (via gain), and writes a well-formatted CSV.
 
 ---
 
 ## 🧾 Register Reference
 
 For a complete register list and descriptions, refer to the `Hybrid_Inverter_Registers.xltx` in the `docs/` folder.  
-Additional register-name mappings can be found in the `huawei_solar.register_names` module. fileciteturn3file4
+Additional register-name mappings can be found in the `huawei_solar.register_names` module.
 
 ---
 
@@ -523,7 +523,7 @@ Additional register-name mappings can be found in the `huawei_solar.register_nam
 - **Q: Performance CSV shows zeros or NaNs**  
   A: The inverter needs to be idle (no PV generation or battery flow) when reading static performance registers. Ensure steady state before running `inverter_performance_tests.py`.  
 
-For additional FAQs, refer to the `docs/` folder and the official FusionSolar/Inverter user manuals. fileciteturn3file3turn3file2
+For additional FAQs, refer to the `docs/` folder and the official FusionSolar/Inverter user manuals.
 
 ---
 
