@@ -8,10 +8,10 @@ from huawei_solar import create_tcp_bridge
 import huawei_solar.register_names as rn
 from huawei_solar.registers import REGISTERS
 
-# ─── CONFIGURE YOUR INVERTER HERE ────────────────────────────────────────────────
-HOST     = "192.168.200.1"    # IP of your inverter
-PORT     = 6607               # Modbus-TCP port (usually 502 or 6607)
-PASSWORD = "00000a"           # Installer password
+# --- CONFIGURE YOUR INVERTER HERE ------------------------------------
+HOST = "192.168.200.1"  # IP of your inverter
+PORT = 6607  # Modbus-TCP port (usually 502 or 6607)
+PASSWORD = "00000a"  # Installer password
 # ────────────────────────────────────────────────────────────────────────────────
 
 # === Logging Setup ===
@@ -22,9 +22,12 @@ fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 console = logging.StreamHandler()
 console.setFormatter(fmt)
 logger.addHandler(console)
-file_handler = RotatingFileHandler("logs/battery_info.log", maxBytes=5e6, backupCount=3)
+file_handler = RotatingFileHandler(
+    "logs/battery_info.log", maxBytes=5e6, backupCount=3
+)
 file_handler.setFormatter(fmt)
 logger.addHandler(file_handler)
+
 
 async def main():
     # 1) Connect to inverter CPU (slave 0)
@@ -60,9 +63,10 @@ async def main():
             r = REGISTERS[key]
             unit = r.unit if r.unit is not None else "–"
             print(f" • {key}: address {r.register}   unit={unit}")
+
     dump("Forced Discharge", discharge, 2)
-    dump("Forced Charge",    charge,    1)
-    dump("Forced Idle",      idle,      0)
+    dump("Forced Charge", charge, 1)
+    dump("Forced Idle", idle, 0)
 
     # 4) Static resolutions
     print("\nMinimum resolutions:")
@@ -83,7 +87,9 @@ async def main():
     await bridge.stop()
     logger.info("Connection closed.")
 
+
 if __name__ == "__main__":
     asyncio.run(main())
-# This script reads and prints the forced charge/discharge settings of a Huawei battery inverter.
-# It connects to the inverter, retrieves the current settings, and displays them in a user-friendly format.
+# This script prints the forced charge/discharge settings of a Huawei
+# battery inverter. It connects to the inverter, reads the current
+# settings and displays them in a concise format.

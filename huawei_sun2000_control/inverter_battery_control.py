@@ -4,7 +4,11 @@ import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from huawei_solar import create_tcp_bridge, create_rtu_bridge, register_names as rn
+from huawei_solar import (
+    create_tcp_bridge,
+    create_rtu_bridge,
+    register_names as rn,
+)
 
 # === Logging Setup ===
 Path("logs").mkdir(exist_ok=True)
@@ -16,18 +20,21 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-file_handler = RotatingFileHandler("logs/battery_control.log",
-                                   maxBytes=5 * 1024 * 1024,
-                                   backupCount=3)
+file_handler = RotatingFileHandler(
+    "logs/battery_control.log", maxBytes=5 * 1024 * 1024, backupCount=3
+)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 # :contentReference[oaicite:9]{index=9}
 
+
 # === Connection Helpers ===
 async def connect_rtu(port: str, baudrate: int, slave_id: int, delay: int = 3):
     try:
-        bridge = await create_rtu_bridge(port=port, baudrate=baudrate, slave_id=slave_id)
+        bridge = await create_rtu_bridge(
+            port=port, baudrate=baudrate, slave_id=slave_id
+        )
         logger.info(f"RTU connected: {port}@{baudrate}, slave={slave_id}")
         await asyncio.sleep(delay)
         return bridge
@@ -35,9 +42,14 @@ async def connect_rtu(port: str, baudrate: int, slave_id: int, delay: int = 3):
         logger.error(f"RTU connect failed: {e}")
         return None
 
-async def connect_tcp(host: str, port: int, slave_id: int, password: str, delay: int = 3):
+
+async def connect_tcp(
+    host: str, port: int, slave_id: int, password: str, delay: int = 3
+):
     try:
-        bridge = await create_tcp_bridge(host=host, port=port, slave_id=slave_id)
+        bridge = await create_tcp_bridge(
+            host=host, port=port, slave_id=slave_id
+        )
         await bridge.login("installer", password)
         logger.info("TCP connected & installer logged in.")
         await asyncio.sleep(delay)
@@ -45,6 +57,7 @@ async def connect_tcp(host: str, port: int, slave_id: int, password: str, delay:
     except Exception as e:
         logger.error(f"TCP connect/login failed: {e}")
         return None
+
 
 # === Read/Write Helpers ===
 async def ensure_and_set(bridge, register, value, label: str):
@@ -62,11 +75,19 @@ async def ensure_and_set(bridge, register, value, label: str):
         # Read back to validate
         result = await bridge.client.get(register, slave=bridge.slave_id)
         if result.value == value:
-            logger.info(f"[VALIDATED] {label or register.name} = {result.value}")
+            logger.info(
+                f"[VALIDATED] {label or register.name} = {result.value}"
+            )
         else:
-            logger.warning(f"[MISMATCH] {label or register.name}: expected {value}, got {result.value}")
+            logger.warning(
+                (
+                    f"[MISMATCH] {label or register.name}: expected {value}, "
+                    f"got {result.value}"
+                )
+            )
     except Exception as e:
         logger.error(f"Failed to set {label or register.name}: {e}")
+
 
 async def read_param(bridge, register, label: str):
     """
@@ -80,7 +101,9 @@ async def read_param(bridge, register, label: str):
         logger.error(f"Failed to read {label or register.name}: {e}")
         return None
 
+
 # :contentReference[oaicite:10]{index=10}
+
 
 # === Monitoring Loop ===
 async def monitor_stats(bridge, interval_seconds: int = 5):
@@ -91,16 +114,20 @@ async def monitor_stats(bridge, interval_seconds: int = 5):
     try:
         while True:
             await read_param(bridge, rn.STORAGE_STATE_OF_CAPACITY, "SoC (%)")
-            await read_param(bridge, rn.STORAGE_CHARGE_DISCHARGE_POWER, "Battery Power (W)")
+            await read_param(
+                bridge, rn.STORAGE_CHARGE_DISCHARGE_POWER, "Battery Power (W)"
+            )
             await asyncio.sleep(interval_seconds)
     except asyncio.CancelledError:
         logger.info("[MONITOR] Monitoring stopped.")
     except Exception as e:
         logger.error(f"[MONITOR] Error: {e}")
 
+
 # :contentReference[oaicite:11]{index=11}
 
 # === Battery Control Commands ===
+
 
 async def force_charge_duration(bridge, power: int, duration: int):
     """
@@ -111,13 +138,27 @@ async def force_charge_duration(bridge, power: int, duration: int):
       3. Charge Power → power (W)
       4. Write 1 to STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE (trigger)
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, 100, "Target SoC for Charge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD, duration,
-                         "Charge Duration (min)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power (W)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        100,
+        "Target SoC for Charge",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD,
+        duration,
+        "Charge Duration (min)",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power (W)"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge"
+    )
     # Start monitoring in background
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def force_discharge_duration(bridge, power: int, duration: int):
     """
@@ -128,12 +169,32 @@ async def force_discharge_duration(bridge, power: int, duration: int):
       3. Discharge Power → power (W)
       4. Write 2 to STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE (trigger)
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, 0, "Target SoC for Discharge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD, duration,
-                         "Discharge Duration (min)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, power, "Discharge Power (W)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 2, "Trigger Discharge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        0,
+        "Target SoC for Discharge",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD,
+        duration,
+        "Discharge Duration (min)",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_DISCHARGE_POWER,
+        power,
+        "Discharge Power (W)",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE,
+        2,
+        "Trigger Discharge",
+    )
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def force_charge_soc(bridge, power: int, target_soc: int):
     """
@@ -143,10 +204,20 @@ async def force_charge_soc(bridge, power: int, target_soc: int):
       2. Charge Power → power (W)
       3. Write 1 to STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, target_soc, "Target SoC for Charge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power (W)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        target_soc,
+        "Target SoC for Charge",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power (W)"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge"
+    )
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def force_discharge_soc(bridge, power: int, target_soc: int):
     """
@@ -156,20 +227,50 @@ async def force_discharge_soc(bridge, power: int, target_soc: int):
       2. Discharge Power → power (W)
       3. Write 2 to STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, target_soc, "Target SoC for Discharge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, power, "Discharge Power (W)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 2, "Trigger Discharge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        target_soc,
+        "Target SoC for Discharge",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_DISCHARGE_POWER,
+        power,
+        "Discharge Power (W)",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE,
+        2,
+        "Trigger Discharge",
+    )
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def stop_charge(bridge):
     """
     Stop any ongoing forced charge/discharge.
     Per §4.2: write 0 to the session-control register and cancel monitoring.
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD, 0, "Clear Duration (min)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, 0, "Clear Charge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, 0, "Clear Discharge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 0, "Stop Charge/Discharge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD,
+        0,
+        "Clear Duration (min)",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, 0, "Clear Charge Power"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, 0, "Clear Discharge Power"
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE,
+        0,
+        "Stop Charge/Discharge",
+    )
 
     monitor_task = getattr(bridge, "_monitor_task", None)
     if monitor_task and not monitor_task.done():
@@ -178,7 +279,10 @@ async def stop_charge(bridge):
             await monitor_task
         except asyncio.CancelledError:
             pass
-    logger.info("Battery session stopped; inverter returns to idle/self-consumption.")
+    logger.info(
+        "Battery session stopped; inverter returns to idle/self-consumption."
+    )
+
 
 async def shutdown_bridge(bridge):
     """
@@ -189,6 +293,8 @@ async def shutdown_bridge(bridge):
         logger.info("Bridge closed.")
     except Exception as e:
         logger.error(f"Error closing bridge: {e}")
+
+
 async def main_rtu():
     # Example RTU parameters; change as needed:
     port = "COM3"
@@ -205,4 +311,4 @@ async def main_rtu():
         await asyncio.sleep(60)  # Let it run for a while
         await stop_charge(bridge)
     finally:
-        await shutdown_bridge(bridge)   
+        await shutdown_bridge(bridge)

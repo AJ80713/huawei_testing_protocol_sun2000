@@ -2,9 +2,17 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 import pytest
 
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from huawei_sun2000_control import inverter_telemetry as it
+import importlib
+import os
+import sys
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+)
+it = importlib.import_module(
+    "huawei_sun2000_control.inverter_telemetry"
+)
+
 
 @pytest.mark.asyncio
 async def test_read_param_returns_value():

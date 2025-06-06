@@ -5,13 +5,13 @@ from rtu_battery_control import (
     force_discharge_duration,
     stop_charge,
     shutdown_bridge,
-    monitor_stats
 )
 
 # === RTU Configuration ===
-COM_PORT = "COM3"    # your USB-RS485 adapter port
-BAUDRATE = 9600      # inverter’s RTU baud rate
-SLAVE_ID = 2         # RTU slave address
+COM_PORT = "COM3"  # your USB-RS485 adapter port
+BAUDRATE = 9600  # inverter’s RTU baud rate
+SLAVE_ID = 2  # RTU slave address
+
 
 async def run_cycle(bridge, power: int, duration: int):
     """
@@ -33,12 +33,13 @@ async def run_cycle(bridge, power: int, duration: int):
     await stop_charge(bridge)
     print("Discharge stopped.\n")
 
+
 async def main():
     bridge = await connect_and_login_rtu(
         port=COM_PORT,
         baudrate=BAUDRATE,
         slave_id=SLAVE_ID,
-        delay=5  # seconds to wait after opening RTU link
+        delay=5,  # seconds to wait after opening RTU link
     )
     if not bridge:
         print("Failed to connect to inverter over RTU.")
@@ -50,6 +51,7 @@ async def main():
     finally:
         await shutdown_bridge(bridge)
         print("Script completed.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

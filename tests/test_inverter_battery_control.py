@@ -3,9 +3,17 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 import pytest
 
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from huawei_sun2000_control import inverter_battery_control as ibc
+import importlib
+import os
+import sys
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+)
+ibc = importlib.import_module(
+    "huawei_sun2000_control.inverter_battery_control"
+)
+
 
 @pytest.mark.asyncio
 async def test_ensure_and_set(monkeypatch):
