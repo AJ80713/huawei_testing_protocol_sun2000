@@ -32,7 +32,10 @@ logger.addHandler(file_handler)
 
 # === Connection and Disconnection Helpers ===
 
-async def connect_and_login(host: str, port: int, slave_id: int, password: str, delay: int = 5):
+
+async def connect_and_login(
+    host: str, port: int, slave_id: int, password: str, delay: int = 5
+):
     """
     Connect to the inverter and perform installer login.
 
@@ -57,6 +60,7 @@ async def connect_and_login(host: str, port: int, slave_id: int, password: str, 
         logging.error(f"Connection or login failed: {e}")
         return None
 
+
 async def shutdown_bridge(bridge):
     """
     Gracefully stop the connection with the inverter.
@@ -67,7 +71,9 @@ async def shutdown_bridge(bridge):
     except Exception as e:
         logging.error(f"Failed to stop bridge: {e}")
 
+
 # === Write Helper ===
+
 
 async def ensure_and_set(bridge, register, value, label=""):
     """
@@ -87,13 +93,22 @@ async def ensure_and_set(bridge, register, value, label=""):
         # Validate the write
         result = await bridge.client.get(register, slave=bridge.slave_id)
         if result.value == value:
-            logging.info(f"[VALIDATED] {label or register.name} = {result.value}")
+            logging.info(
+                f"[VALIDATED] {label or register.name} = {result.value}"
+            )
         else:
-            logging.warning(f"[MISMATCH] {label or register.name}: expected {value}, got {result.value}")
+            logging.warning(
+                (
+                    f"[MISMATCH] {label or register.name}: expected {value}, "
+                    f"got {result.value}"
+                )
+            )
     except Exception as e:
         logging.error(f"Failed to set {label or register.name}: {e}")
 
+
 # === Read Helper ===
+
 
 async def read_param(bridge, register, label=""):
     """
@@ -112,7 +127,9 @@ async def read_param(bridge, register, label=""):
         logging.error(f"Failed to read {label or register.name}: {e}")
         return None
 
+
 # === Monitoring ===
+
 
 async def monitor_stats(bridge, interval_seconds: int = 5):
     """
@@ -125,15 +142,23 @@ async def monitor_stats(bridge, interval_seconds: int = 5):
     logging.info("[MONITOR] Monitoring started.")
     try:
         while True:
-            await read_param(bridge, rn.STORAGE_STATE_OF_CAPACITY, "State of Capacity")
-            await read_param(bridge, rn.STORAGE_CHARGE_DISCHARGE_POWER, "Battery Charge/Discharge Power")
+            await read_param(
+                bridge, rn.STORAGE_STATE_OF_CAPACITY, "State of Capacity"
+            )
+            await read_param(
+                bridge,
+                rn.STORAGE_CHARGE_DISCHARGE_POWER,
+                "Battery Charge/Discharge Power",
+            )
             await asyncio.sleep(interval_seconds)
     except asyncio.CancelledError:
         logging.info("[MONITOR] Monitoring stopped.")
     except Exception as e:
         logging.error(f"[MONITOR] Error: {e}")
 
+
 # === Charge/Discharge Session Controls ===
+
 
 async def force_charge_duration(bridge, power: int, duration: int = 0):
     """
@@ -144,12 +169,27 @@ async def force_charge_duration(bridge, power: int, duration: int = 0):
         power: Charging power in watts.
         duration: Duration in minutes.
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, 100, "Target SoC for Charge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD, duration, "Charge Period")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        100,
+        "Target SoC for Charge",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD,
+        duration,
+        "Charge Period",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge"
+    )
 
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def force_discharge_duration(bridge, power: int, duration: int = 0):
     """
@@ -160,12 +200,30 @@ async def force_discharge_duration(bridge, power: int, duration: int = 0):
         power: Discharging power in watts.
         duration: Duration in minutes.
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, 0, "Target SoC for Discharge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD, duration, "Discharge Period")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, power, "Discharge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 2, "Trigger Discharge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        0,
+        "Target SoC for Discharge",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD,
+        duration,
+        "Discharge Period",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, power, "Discharge Power"
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE,
+        2,
+        "Trigger Discharge",
+    )
 
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def force_charge_soc(bridge, power: int, target_soc: int = 100):
     """
@@ -176,11 +234,21 @@ async def force_charge_soc(bridge, power: int, target_soc: int = 100):
         power: Charging power in watts.
         target_soc: Target battery State of Capacity (0-100).
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, target_soc, "Target SoC for Charge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        target_soc,
+        "Target SoC for Charge",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, power, "Charge Power"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 1, "Trigger Charge"
+    )
 
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
+
 
 async def force_discharge_soc(bridge, power: int, target_soc: int = 0):
     """
@@ -191,17 +259,44 @@ async def force_discharge_soc(bridge, power: int, target_soc: int = 0):
         power: Discharging power in watts.
         target_soc: Target battery State of Capacity (0-100).
     """
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC, target_soc, "Target SoC for Discharge")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, power, "Discharge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 2, "Trigger Discharge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_SOC,
+        target_soc,
+        "Target SoC for Discharge",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, power, "Discharge Power"
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE,
+        2,
+        "Trigger Discharge",
+    )
 
     bridge._monitor_task = asyncio.create_task(monitor_stats(bridge))
 
+
 async def stop_charge(bridge):
-    await ensure_and_set(bridge, rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD, 0, "Discharge Period (min)")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, 0, "Charge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, 0, "Discharge Power")
-    await ensure_and_set(bridge, rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE, 0, "Stop Charge/Discharge")
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCED_CHARGING_AND_DISCHARGING_PERIOD,
+        0,
+        "Discharge Period (min)",
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_CHARGE_POWER, 0, "Charge Power"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_FORCIBLE_DISCHARGE_POWER, 0, "Discharge Power"
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_FORCIBLE_CHARGE_DISCHARGE_WRITE,
+        0,
+        "Stop Charge/Discharge",
+    )
 
     monitor_task = getattr(bridge, "_monitor_task", None)
     if monitor_task and not monitor_task.done():
@@ -211,12 +306,29 @@ async def stop_charge(bridge):
         except asyncio.CancelledError:
             pass
 
+
 async def default_params(bridge):
     """
     Restore safe default inverter settings for battery operation.
     """
-    await ensure_and_set(bridge, rn.STORAGE_CHARGING_CUTOFF_CAPACITY, 1000, "Max SoC (% x10)")
-    await ensure_and_set(bridge, rn.STORAGE_DISCHARGING_CUTOFF_CAPACITY, 100, "Min SoC (% x10)")
-    await ensure_and_set(bridge, rn.STORAGE_MAXIMUM_CHARGING_POWER, 3000, "Max Charging Power")
-    await ensure_and_set(bridge, rn.STORAGE_MAXIMUM_DISCHARGING_POWER, 3000, "Max Discharging Power")
-    await ensure_and_set(bridge, rn.STORAGE_CHARGE_FROM_GRID_FUNCTION, 1, "Charge From Grid Enable")
+    await ensure_and_set(
+        bridge, rn.STORAGE_CHARGING_CUTOFF_CAPACITY, 1000, "Max SoC (% x10)"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_DISCHARGING_CUTOFF_CAPACITY, 100, "Min SoC (% x10)"
+    )
+    await ensure_and_set(
+        bridge, rn.STORAGE_MAXIMUM_CHARGING_POWER, 3000, "Max Charging Power"
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_MAXIMUM_DISCHARGING_POWER,
+        3000,
+        "Max Discharging Power",
+    )
+    await ensure_and_set(
+        bridge,
+        rn.STORAGE_CHARGE_FROM_GRID_FUNCTION,
+        1,
+        "Charge From Grid Enable",
+    )
